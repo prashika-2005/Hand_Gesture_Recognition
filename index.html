@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>GestureVision - Real-Time Recognition</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="container">
+    <h1>🖐️ GestureVision</h1>
+    <p>Real-Time Hand Gesture Recognition using your webcam</p>
+
+    <div class="video-container">
+      <img id="video" src="" alt="Video Feed">
+      <div id="overlay" class="overlay">Camera Off</div>
+    </div>
+
+    <div class="controls">
+      <button id="start">▶ Start Recognition</button>
+      <button id="stop">⏹ Stop Recognition</button>
+      <button id="exit">🚪 Exit App</button>
+    </div>
+
+    <div class="status">
+      <h2>Last Detected Gesture:</h2>
+      <div id="gesture">None</div>
+    </div>
+  </div>
+
+  <script>
+    const video = document.getElementById("video");
+    const overlay = document.getElementById("overlay");
+    const gestureBox = document.getElementById("gesture");
+
+    let poller = null;
+
+    async function startRecognition() {
+      await fetch("/start_camera", { method: "POST" });
+      video.src = "/video_feed";
+      overlay.style.display = "none";
+      startPolling();
+    }
+
+    async function stopRecognition() {
+      await fetch("/stop_camera", { method: "POST" });
+      video.src = "";
+      overlay.style.display = "flex";
+      stopPolling();
+      gestureBox.textContent = "None";
+    }
+
+    async function exitApp() {
+      await fetch("/exit", { method: "POST" });
+      alert("Server shutting down... You can close this tab.");
+      window.close();
+    }
+
+    function startPolling() {
+      if (poller) return;
+      poller = setInterval(async () => {
+        const res = await fetch("/get_gesture");
+        const data = await res.json();
+        gestureBox.textContent = data.gesture || "None";
+      }, 700);
+    }
+
+    function stopPolling() {
+      clearInterval(poller);
+      poller = null;
+    }
+
+    document.getElementById("start").addEventListener("click", startRecognition);
+    document.getElementById("stop").addEventListener("click", stopRecognition);
+    document.getElementById("exit").addEventListener("click", exitApp);
+  </script>
+</body>
+</html>
